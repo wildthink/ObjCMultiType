@@ -12,5 +12,6 @@
 
 @property (strong, nonatomic) NSDate* birthDate;
 @property (readonly) NSString* age;
+@property NSInteger count;
 
 @end

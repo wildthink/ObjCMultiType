@@ -10,6 +10,8 @@
 
 @implementation Person
 
+@dynamic birthDate, count;
+
 - (NSString*)age
 {
     return @"1 year";

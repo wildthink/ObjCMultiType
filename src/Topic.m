@@ -10,6 +10,8 @@
 
 @implementation Topic
 
+@dynamic name, summary, image;
+
 
 + entityNamed:(NSString*)name;
 {
