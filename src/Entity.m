@@ -13,10 +13,11 @@
 @interface entity_i : NSObject
 {
     @package
-    NSInteger pid;
+    CFUUIDRef guid;
     NSSet *classTypes;
     Type *preferredType;
-    NSMutableDictionary *properties;
+    NSMapTable *strongProperties;
+    NSMapTable *weakProperties;
 }
 
 
@@ -26,9 +27,21 @@
 
 - (id)init{
     self = [super init];
-    pid = 123;
-    properties = [NSMutableDictionary dictionary];
+    guid = CFUUIDCreate(NULL);
+    weakProperties = [NSMapTable strongToWeakObjectsMapTable];
+    strongProperties = [NSMapTable strongToStrongObjectsMapTable];
+    classTypes = [NSSet set];
     return self;
+}
+
+- (CFUUIDRef) guid {
+    return guid;
+}
+
+- (NSString *)guidString
+{
+    CFStringRef string = CFUUIDCreateString(NULL, guid);
+    return CFBridgingRelease(string);
 }
 
 - (BOOL)conformsToProtocolType:(Protocol*)protocol;
@@ -42,17 +55,45 @@
 
 - (id)valueForKey:(NSString *)key
 {
-    return [properties valueForKey:key];
+    id anon = [strongProperties objectForKey:key];
+    if (anon == nil)
+        anon = [weakProperties objectForKey:key];
+    return anon;
 }
 
-- (void)setValue:(id)value forKey:(NSString *)key
+- (void)setValue:(id)value forKey:(NSString *)key policy:(objc_AssociationPolicy)policy
 {
-    [properties setValue:value forKey:key];
+    if (value == nil) {
+        [weakProperties removeObjectForKey:key];
+        [strongProperties removeObjectForKey:key];
+        return;
+    }
+    // else
+    switch (policy) {
+        case OBJC_ASSOCIATION_ASSIGN:
+            [weakProperties setObject:value forKey:key];
+            break;
+        case OBJC_ASSOCIATION_RETAIN_NONATOMIC:
+        case OBJC_ASSOCIATION_RETAIN:
+            [strongProperties setObject:value forKey:key];
+            break;
+        case OBJC_ASSOCIATION_COPY:
+        case OBJC_ASSOCIATION_COPY_NONATOMIC:
+            [strongProperties setObject:[value copy] forKey:key];
+            break;
+    }
 }
 
 - (void)disassociateFrom:(Type*)superType;
 {
     
+}
+
+- (void)includeType:ctype
+{
+    if (! [classTypes containsObject:ctype]) {
+        classTypes = [classTypes setByAddingObject:ctype];
+    }
 }
 
 @end
@@ -81,6 +122,13 @@ Class WTAsClass (id type) {
     return t_class;
 }
 
+BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
+    CFUUIDBytes gb1 = CFUUIDGetUUIDBytes(g1);
+    CFUUIDBytes gb2 = CFUUIDGetUUIDBytes(g2);
+    size_t size = sizeof(gb1);
+    int cmp = memcmp(&gb1, &gb2, size);
+    return (cmp == 0);
+}
 
 @interface Entity()
     @property (strong, nonatomic) entity_i *internal;
@@ -123,7 +171,9 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
  ? An unknown type (among other things, this code is used for function pointers)
 */
 
-+ (void)addGetterNamed:(NSString*)getterName forProperty:(NSString*)propertyName ofType:(NSString*)ptype
++ (void)addGetterNamed:(NSString*)getterName
+           forProperty:(NSString*)propertyName
+                ofType:(NSString*)ptype
 {
     unichar ch = [ptype characterAtIndex:0];
     
@@ -191,7 +241,10 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
     }
 }
 
-+ (void)addSetterNamed:(NSString*)setterName forProperty:(NSString*)propertyName ofType:(NSString*)ptype
++ (void)addSetterNamed:(NSString*)setterName
+           forProperty:(NSString*)propertyName
+                ofType:(NSString*)ptype
+                policy:(objc_AssociationPolicy)policy
 {
     unichar ch = [ptype characterAtIndex:0];
     
@@ -199,49 +252,49 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
         case 'c':
         case 'C': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, char _v){
-                [_s setValue:[NSNumber numberWithChar:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithChar:_v] forKey:propertyName policy:policy];
             });
         }
             break;
         case 's':
         case 'S': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, short _v){
-                [_s setValue:[NSNumber numberWithShort:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithShort:_v] forKey:propertyName policy:policy];
             });
         }
             break;
         case 'i':
         case 'I': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, int _v){
-                [_s setValue:[NSNumber numberWithInt:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithInt:_v] forKey:propertyName policy:policy];
             });
         }
             break;
         case 'l':
         case 'L': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, long _v){
-                [_s setValue:[NSNumber numberWithLong:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithLong:_v] forKey:propertyName policy:policy];
             });
         }
             break;
         case 'q':
         case 'Q': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, long long _v){
-                [_s setValue:[NSNumber numberWithLongLong:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithLongLong:_v] forKey:propertyName policy:policy];
             });
         }
             break;
             
         case 'f': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, float _v){
-                [_s setValue:[NSNumber numberWithFloat:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithFloat:_v] forKey:propertyName policy:policy];
             });
         }
             break;
             
         case 'd': {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, double _v){
-                [_s setValue:[NSNumber numberWithDouble:_v] forKey:propertyName];
+                [_s setValue:[NSNumber numberWithDouble:_v] forKey:propertyName policy:policy];
             });
         }
             break;
@@ -250,7 +303,7 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
         case '#': // Class
         {
             addMethodBlock (self, setterName, "@c:", ^void(id _s, id _v){
-                [_s setValue:_v forKey:propertyName];
+                [_s setValue:_v forKey:propertyName policy:policy];
             });
         }
             break;
@@ -259,17 +312,17 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
     }
 }
 
-
-+ (BOOL)resolveInstanceMethod:(SEL)sel {
-    const char *rawName = sel_getName(sel);
++ (BOOL)resolveInstanceMethod:(SEL)sel
+{
+    const char *cstrName = sel_getName(sel);
     NSString *name = NSStringFromSelector(sel);
     
     NSString *propertyName = nil;
     
     if ([name hasPrefix:@"set"]) {
-        propertyName = [NSString stringWithFormat:@"%c%s", tolower(rawName[3]), (rawName+4)];
+        propertyName = [NSString stringWithFormat:@"%c%s", tolower(cstrName[3]), (cstrName+4)];
     } else if ([name hasPrefix:@"is"]) {
-        propertyName = [NSString stringWithFormat:@"%c%s", tolower(rawName[2]), (rawName+3)];
+        propertyName = [NSString stringWithFormat:@"%c%s", tolower(cstrName[2]), (cstrName+3)];
     } else {
         propertyName = name;
     }
@@ -329,7 +382,7 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
         if (setterName == nil) {
             setterName = [NSString stringWithFormat:@"set%c%s:", toupper(rawPropertyName[0]), (rawPropertyName+1)];
         }
-        [self addSetterNamed:setterName forProperty:propertyName ofType:propertyType];
+        [self addSetterNamed:setterName forProperty:propertyName ofType:propertyType policy:policy];
     }    
     return YES;
 }
@@ -347,18 +400,21 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
 
 - initWithEntity:(Entity*)anObject;
 {
-    if ([anObject.types containsObject:[self class]])
-        _internal= anObject->_internal;
-    
+    _internal= anObject->_internal;
+    [_internal includeType:[self class]];
     return self;
 }
 
-- (NSInteger)sed {
-    return _internal->pid;
+- (CFUUIDRef)guid {
+    return _internal->guid;
+}
+
+- (NSString*)sguid {
+    return [_internal guidString];
 }
 
 - (Type*)preferredType {
-    return nil;
+    return _internal->preferredType;
 }
 
 - (void)disassociateFrom:(Type*)superType;
@@ -388,7 +444,18 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
     return (classToBe ? [[classToBe class] entityWithEntity:self] : nil);
 }
 
-- (BOOL)isaType:type {
+- (BOOL)isaType:type
+{
+    Class t_class = WTAsClass (type);
+    
+    if (t_class == Nil)
+        return NO;
+        
+    for (Class myType in _internal->classTypes) {
+        if ([myType isSubclassOfClass:t_class]) {
+            return YES;
+        }
+    }
     return NO;
 }
 
@@ -413,41 +480,62 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
 {
     Class t_class = WTAsClass (type);
     
-    if ([type isKindOfClass:[NSString class]]) {
-        t_class = NSClassFromString(type);
-    } else if (WTIsClass(type)){
-        t_class = (Class)type;
-    } else {
+    if (! t_class) {
         [NSException raise:@"Illegal type designator" format:@"%@ is NOT a Class or String", type];
     }
-    return [[[type class] alloc] initWithEntity:self];
+    return [[t_class alloc] initWithEntity:self];
 }
 
-- (BOOL)isSameEntity:(Entity*)otherEntity;
+- (BOOL)isSameEntityAs:(Entity*)otherEntity;
 {
-    return _internal->pid == otherEntity->_internal->pid;
+    return areGUIDSEqual(_internal->guid, otherEntity->_internal->guid);
 }
 
-#pragma KeyValue overrides
+- (BOOL)isIsomorphicTo:(Entity*)otherEntity
+{
+    return
+    ([_internal->strongProperties isEqual:otherEntity->_internal->strongProperties]
+     && [_internal->weakProperties isEqual:otherEntity->_internal->weakProperties]);
+}
+
+
+- (NSString*)longDescription
+{
+    NSMutableString *mstr = [NSMutableString stringWithCapacity:([_internal->strongProperties count] * 4)];
+    [mstr appendFormat:@"<%@:%@", self.class, self.sguid];
+    
+    for (NSString *key in _internal->strongProperties) {
+        id val = [self valueForKey:key];
+        [mstr appendFormat:@"\n\t%@: %@", key, val];
+    }
+    [mstr appendString:@">"];
+    return mstr;
+}
+
+#pragma mark KeyValueOverrides
 
 - (id)valueForUndefinedKey:(NSString *)key
 {
-    return [_internal->properties valueForKey:key];
+    return [_internal valueForKey:key];
 }
 
 - (id)valueForKey:(NSString *)key
 {
-    return [_internal->properties valueForKey:key];
+    return [_internal valueForKey:key];
 }
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key {
-    [_internal->properties setValue:value forKey:key];
+    [_internal setValue:value forKey:key];
 }
 
 - (void)setValue:(id)value forKey:(NSString *)key
 {
-    [_internal->properties setValue:value forKey:key];
+    [_internal setValue:value forKey:key];
 }
 
+- (void)setValue:(id)value forKey:(NSString *)key policy:(objc_AssociationPolicy)policy
+{
+    [_internal setValue:value forKey:key policy:policy];
+}
 
 @end

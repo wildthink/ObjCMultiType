@@ -22,7 +22,7 @@
 
 - (NSString*)description
 {
-    return [NSString stringWithFormat:@"<%@:%ld %@>", NSStringFromClass(self.class), self.sed, self.name];
+    return [NSString stringWithFormat:@"<%@:%@ name: '%@>'", NSStringFromClass(self.class), self.sguid, self.name];
 }
 
 @end

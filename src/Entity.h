@@ -12,7 +12,8 @@
 
 @interface Entity : NSObject
 
-@property (readonly) NSInteger  sed; // simple entity designation
+@property (readonly) CFUUIDRef guid;
+@property (readonly) NSString* sguid;
 @property (readonly, nonatomic) NSSet *types;
 
 
@@ -41,6 +42,9 @@
  This does NOT compare properties. It only confirms that self and otherEntity
  are semantically the same.
  */
-- (BOOL)isSameEntity:(Entity*)otherEntity;
+- (BOOL)isSameEntityAs:(Entity*)otherEntity;
+- (BOOL)isIsomorphicTo:(Entity*)otherEntity;
+
+- (NSString*)longDescription;
 
 @end
