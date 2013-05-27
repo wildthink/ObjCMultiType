@@ -27,17 +27,17 @@
 */
 - asType:type;
 
-- (BOOL)isaType:type;
+-(BOOL)isaType:type;
 
 /** nil if no conforming type Class is found
  */
 - asTypeConformingToProtocol:(Protocol*)proto;
 
 /**
- Returns self as type, adopting type if required. 
+ Returns self as a potentially new Class for the type, adopting type if required. 
  NOTE: This is likely to be a new instance pointer.
  */
-- becomeType:type;
+- becomeClassForType:type;
 
 /*
  This does NOT compare properties. It only confirms that self and otherEntity
