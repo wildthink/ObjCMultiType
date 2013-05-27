@@ -9,6 +9,9 @@
 
 #import <Foundation/Foundation.h>
 
+@class Entity;
+
+
 @interface Type : NSObject
 
 @property (strong, nonatomic) NSString *namespace;
@@ -19,15 +22,18 @@
 + typeNamed:(NSString*)aName inNamespace:(NSString*)ns implementationClass:(Class)implClass;
 + typeForClass:(Class)iClass ns:(NSString*)ns;
 + typeForClass:(Class)iClass;
++ typeFor:typeDesignation;
 
 - initWithName:(NSString*)aName inNamespace:(NSString*)ns implementationClass:(Class)implClass;
 
 - (void)includeType:(Type*)aType;
 - (void)removeIncludedType:(Type*)aType;
 
-- (BOOL)isaType:(Type*)aType;
+- (BOOL)doesIncludeType:(Type*)aType;
 - (BOOL)conformsToTypeProtocol:(Protocol *)aProtocol;
 
 - typeInstancesRespondToSelector:(SEL)aSelector;
+
+- instantiateEntity:(Entity*)ent;
 
 @end
