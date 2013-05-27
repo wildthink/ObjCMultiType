@@ -7,6 +7,11 @@
 
 #import "Type.h"
 
+@interface Type ()
+@property (strong, readwrite, nonatomic) NSMutableSet *includedTypes;
+@end
+
+
 @implementation Type
 
 + typeForClass:(Class)iClass {
@@ -44,21 +49,50 @@
     return NO;
 }
 
-- (void)includeType:(Type*)superType;
+- typeInstancesRespondToSelector:(SEL)aSelector;
 {
-    if (! [self isaType:superType]) {
-        self.includedTypes = [self.includedTypes setByAddingObject:superType];
+    if ([self.implClass instancesRespondToSelector:aSelector])
+        return self;
+    
+    for (Type *t in self.includedTypes) {
+        if ([t typeInstancesRespondToSelector:aSelector]) {
+            return t;
+        }
     }
+    return nil;
 }
 
-- (void)removeIncludedType:(Type*)superType;
+/**
+ If self is a subtype of atype then do nothing
+ If atype is a subtype of any currently included type then remove the old type
+ */
+
+- (void)includeType:(Type*)aType;
 {
-    [NSException raise:@"Not Implemented" format:@"%@", NSStringFromSelector(_cmd)];
+    if ([self isaType:aType]) {
+        return;
+    }
+    
+    // remove redundant types
+    NSMutableSet *toKeep = [NSMutableSet set];
+    for (Type *t in self.includedTypes) {
+        if (![t isaType:aType])
+            [toKeep addObject:t];
+    }
+    [toKeep addObject:aType];
+}
+
+- (void)removeIncludedType:(Type*)aType;
+{
+    [(NSMutableSet*)_includedTypes removeObject:aType];
 }
 
 - (BOOL)isaType:(Type*)aType
 {
     if (aType == self)
+        return YES;
+    
+    if ([self.implClass isKindOfClass:aType.implClass])
         return YES;
     
     for (Type *t in self.includedTypes) {

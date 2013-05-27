@@ -14,7 +14,7 @@
 @property (strong, nonatomic) NSString *namespace;
 @property (strong, nonatomic) NSString *name;
 @property (strong, nonatomic) Class implClass;
-@property (strong, nonatomic) NSSet *includedTypes;
+@property (readonly) NSSet *includedTypes;
 
 + typeNamed:(NSString*)aName inNamespace:(NSString*)ns implementationClass:(Class)implClass;
 + typeForClass:(Class)iClass ns:(NSString*)ns;
@@ -22,10 +22,12 @@
 
 - initWithName:(NSString*)aName inNamespace:(NSString*)ns implementationClass:(Class)implClass;
 
-- (void)includeType:(Type*)superType;
-- (void)removeIncludedType:(Type*)superType;
+- (void)includeType:(Type*)aType;
+- (void)removeIncludedType:(Type*)aType;
 
 - (BOOL)isaType:(Type*)aType;
 - (BOOL)conformsToTypeProtocol:(Protocol *)aProtocol;
+
+- typeInstancesRespondToSelector:(SEL)aSelector;
 
 @end

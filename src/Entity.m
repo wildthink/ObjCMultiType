@@ -1,12 +1,13 @@
 //
 //  Entity.m
-//  mDx
 //
 //  Created by Jobe,Jason on 4/24/13.
 //  Copyright (c) 2013 Jobe,Jason. All rights reserved.
 //
 
 #import "Entity.h"
+#import "Type.h"
+
 #import <objc/runtime.h>
 
 
@@ -14,8 +15,8 @@
 {
     @package
     CFUUIDRef guid;
-    NSSet *classTypes;
     Type *preferredType;
+    NSSet *classTypes;
     NSMapTable *strongProperties;
     NSMapTable *weakProperties;
 }
@@ -61,6 +62,11 @@
     return anon;
 }
 
+- (void)setValue:(id)value forKey:(NSString *)key
+{
+    return [self setValue:value forKey:key policy:OBJC_ASSOCIATION_RETAIN];
+}
+
 - (void)setValue:(id)value forKey:(NSString *)key policy:(objc_AssociationPolicy)policy
 {
     if (value == nil) {
@@ -97,23 +103,27 @@
 }
 
 @end
+////////////////   END entity_i /////////////////////////////
 
-BOOL WTIsProtocol (id type) {
+
+static BOOL WTIsProtocol (id type) {
     NSString *name = NSStringFromProtocol(type);
     return (name != nil);
 }
 
-BOOL WTIsClass (id type) {
+static BOOL WTIsClass (id type) {
     NSString *name = NSStringFromClass(type);
     return (name != nil);
 }
 
-Class WTAsClass (id type) {
+static Class WTAsClass (id type) {
     
     Class t_class;
 
     if ([type isKindOfClass:[NSString class]]) {
         t_class = NSClassFromString(type);
+    } else if ([type isKindOfClass:[Type class]]) {
+        t_class = ((Type*)type).implClass;
     } else if (WTIsClass(type)){
         t_class = (Class)type;
     } else {
@@ -122,7 +132,7 @@ Class WTAsClass (id type) {
     return t_class;
 }
 
-BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
+static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     CFUUIDBytes gb1 = CFUUIDGetUUIDBytes(g1);
     CFUUIDBytes gb2 = CFUUIDGetUUIDBytes(g2);
     size_t size = sizeof(gb1);
@@ -130,9 +140,12 @@ BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     return (cmp == 0);
 }
 
+//////////////////////////  ENTITY  /////////////////////////////////////////
+
 @interface Entity()
     @property (strong, nonatomic) entity_i *internal;
 @end
+
 
 @implementation Entity
 
@@ -470,6 +483,26 @@ void addMethodBlock (Class c, NSString *gname, const char *signature, id block)
         }
     }
     return (classToBe ? [[classToBe class] entityWithEntity:self] : nil);
+}
+
+/**
+ This is much less expensive alternative to forwardInvocation
+ */
+
+- (id)forwardingTargetForSelector:(SEL)aSelector
+{
+    
+    for (Class myType in _internal->classTypes) {
+        if ([myType instancesRespondToSelector:aSelector]) {
+            return [self asType:myType];
+        }
+    }
+
+//    Type *type = [self firstTypePerformingSelector:aSelector]
+//    if (type)
+//        return [self asType:type];
+    // else
+    return [super forwardingTargetForSelector:aSelector];
 }
 
 /**

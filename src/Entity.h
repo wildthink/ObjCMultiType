@@ -34,7 +34,8 @@
 - asTypeConformingToProtocol:(Protocol*)proto;
 
 /**
- Returns self as type, adopting type if required.
+ Returns self as type, adopting type if required. 
+ NOTE: This is likely to be a new instance pointer.
  */
 - becomeType:type;
 
@@ -43,7 +44,12 @@
  are semantically the same.
  */
 - (BOOL)isSameEntityAs:(Entity*)otherEntity;
+
+/** 
+ This methods ONLY compares the properties.
+ */
 - (BOOL)isIsomorphicTo:(Entity*)otherEntity;
+
 
 - (NSString*)longDescription;
 
