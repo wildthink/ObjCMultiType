@@ -124,7 +124,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     return nil;
 }
 
-- (BOOL)isaType:type
+- (BOOL)is_a:type
 {
     Type *t_type = [Type typeFor:type];
     
@@ -141,7 +141,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     return NO;
 }
 
-- asTypeConformingToProtocol:(Protocol*)proto;
+- becomeTypeConformingToProtocol:(Protocol*)proto;
 {
     Class classToBe = Nil;
     
@@ -187,7 +187,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     return [t instantiateEntity:self];
 }
 
-- (BOOL)isSameEntityAs:(Entity*)otherEntity;
+- (BOOL)is:(Entity *)otherEntity
 {
     return areGUIDSEqual(_internal->guid, otherEntity->_internal->guid);
 }
