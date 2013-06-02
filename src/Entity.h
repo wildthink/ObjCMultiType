@@ -25,13 +25,13 @@
  Returns self cast into type if it is one.
  If type is NOT a member of types then nil is returned;
 */
-- asType:type;
+- as_a:type;
 
--(BOOL)isaType:type;
+-(BOOL)is_a:type;
 
 /** nil if no conforming type Class is found
  */
-- asTypeConformingToProtocol:(Protocol*)proto;
+- becomeTypeConformingToProtocol:(Protocol*)proto;
 
 /**
  Returns self as a potentially new Class for the type, adopting type if required. 
@@ -43,7 +43,7 @@
  This does NOT compare properties. It only confirms that self and otherEntity
  are semantically the same.
  */
-- (BOOL)isSameEntityAs:(Entity*)otherEntity;
+- (BOOL)is:(Entity*)otherEntity;
 
 /** 
  This methods ONLY compares the properties.

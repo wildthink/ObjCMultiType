@@ -6,6 +6,7 @@ Pod::Spec.new do |s|
   s.license  = 'MIT'
   s.author   = { 'Jason Jobe' => 'jason2010@jasonjobe.com' }
   s.source   = { :git => 'https://github.com/datalore/ObjCMultiType.git' }
-
-  s.source_files = FileList['src/M*.{h,m}'].exclude(/multitype\.m/)
+  s.requires_arc = true
+  s.ios.source_files = 'src/*.[hm]'
+  s.osx.source_files = 'src/*.[hm]'
 end

@@ -107,7 +107,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     return _internal->e_types;
 }
 
-- asType:type
+- as_a:type
 {
     Type *t = [Type typeFor:type];
 
@@ -163,7 +163,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     
     for (Type *myType in _internal->e_types) {
         if ([myType typeInstancesRespondToSelector:aSelector]) {
-            return [self asType:myType];
+            return [self as_a:myType];
         }
     }
     // else
