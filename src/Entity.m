@@ -92,7 +92,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
 }
 
 - (Type*)preferredType {
-    return _internal->preferredType;
+    return (_internal->preferredType ? _internal->preferredType : [_internal->e_types firstObject]);
 }
 
 - (void)disassociateFrom:(Type*)superType;
@@ -103,7 +103,7 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
 /**
  A Set of Types
  */
-- (NSSet*)types {
+- (NSOrderedSet*)types {
     return _internal->e_types;
 }
 
@@ -168,6 +168,19 @@ static BOOL areGUIDSEqual (CFUUIDRef g1, CFUUIDRef g2) {
     }
     // else
     return [super forwardingTargetForSelector:aSelector];
+}
+
+- (BOOL)respondsToSelector:(SEL)aSelector
+{
+    if ([super respondsToSelector:aSelector]) {
+        return YES;
+    }
+    for (Type *myType in _internal->e_types) {
+        if ([myType typeInstancesRespondToSelector:aSelector]) {
+            return YES;
+        }
+    }
+    return NO;
 }
 
 /**

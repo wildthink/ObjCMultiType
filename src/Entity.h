@@ -14,7 +14,7 @@
 
 @property (readonly) CFUUIDRef guid;
 @property (readonly) NSString* sguid;
-@property (readonly, nonatomic) NSSet *types;
+@property (readonly, nonatomic) NSOrderedSet *types;
 
 
 - initWithEntity:(Entity*)aObject;

@@ -17,7 +17,7 @@
     guid = CFUUIDCreate(NULL);
     weakProperties = [NSMapTable strongToWeakObjectsMapTable];
     strongProperties = [NSMapTable strongToStrongObjectsMapTable];
-    e_types = [NSSet set];
+    e_types = [NSOrderedSet orderedSet];
     return self;
 }
 
@@ -104,21 +104,6 @@
     [(NSMutableSet*)e_types removeObject:superType];
 }
 
-//- (void)includeType:ctype
-//{
-//    Type *aType = [Type typeFor:ctype];
-//    
-//    // remove redundant types
-//    NSMutableSet *toKeep = [NSMutableSet set];
-//    for (Type *t in e_types) {
-//        if (![aType isaType:t])
-//            [toKeep addObject:t];
-//    }
-//    [toKeep addObject:aType];
-//    
-//    e_types = toKeep;
-//}
-
 - (void)includeType:(Type*)aType;
 {
     if ([e_types containsObject:aType]) {
@@ -126,7 +111,7 @@
     }
     
     // remove redundant types
-    NSMutableSet *toKeep = [NSMutableSet set];
+    NSMutableOrderedSet *toKeep = [NSMutableOrderedSet orderedSet];
     for (Type *t in e_types) {
         if (![aType doesIncludeType:t])
             [toKeep addObject:t];

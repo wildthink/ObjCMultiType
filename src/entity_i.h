@@ -16,7 +16,7 @@
     @package
     CFUUIDRef guid;
     Type *preferredType;
-    NSSet *e_types;
+    NSOrderedSet *e_types;
     NSMapTable *strongProperties;
     NSMapTable *weakProperties;
 }
